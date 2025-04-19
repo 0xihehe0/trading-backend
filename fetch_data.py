@@ -120,27 +120,36 @@ def get_analyst_data(ticker):
     """获取分析师预测和目标价数据"""
     try:
         recommendations = ticker.recommendations
+        rec_dict = {}
+
         if recommendations is not None and not recommendations.empty:
-            # 转换为字典格式，处理日期转换
-            rec_dict = {}
             for index, row in recommendations.iterrows():
-                date_str = str(index.date())
-                rec_dict[date_str] = {
-                    "firm": row.get("Firm", ""),
-                    "to_grade": row.get("To Grade", ""),
-                    "from_grade": row.get("From Grade", ""),
-                    "action": row.get("Action", "")
-                }
+                try:
+                    # 安全转换日期
+                    date_str = str(index.date()) if hasattr(index, 'date') else str(index)
+                    rec_dict[date_str] = {
+                        "firm": row.get("Firm", ""),
+                        "to_grade": row.get("To Grade", ""),
+                        "from_grade": row.get("From Grade", ""),
+                        "action": row.get("Action", "")
+                    }
+                except Exception as e:
+                    print(f"    ⚠️ 跳过无效推荐数据: {e}")
+                    continue
+
             return {
                 "recommendations": rec_dict,
                 "target_price": ticker.info.get("targetMeanPrice"),
                 "target_high": ticker.info.get("targetHighPrice"),
                 "target_low": ticker.info.get("targetLowPrice")
             }
+
         return {}
+
     except Exception as e:
         print(f"  ⚠️ 无法获取分析师数据: {e}")
         return {}
+
 
 def fetch_and_save():
     """获取并保存S&P500股票的历史价格和基本面数据"""
