@@ -2,16 +2,15 @@
 Author: yaojinxi 864554492@qq.com
 Date: 2025-04-08 21:24:42
 LastEditors: yaojinxi 864554492@qq.com
-LastEditTime: 2025-04-09 21:52:33
+LastEditTime: 2025-05-05 20:55:13
 FilePath: \backend\app\routes\stock.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import json
-
-from flask import Blueprint
 
 stock_bp = Blueprint('stock', __name__)
 
@@ -19,75 +18,75 @@ stock_bp = Blueprint('stock', __name__)
 with open("data/sp500.json", "r") as f:
     stock_data = json.load(f)
 
-# 日期区间映射表
-date_range_days = {
-    "1d": 1,
-    "5d": 5,
-    "1mo": 30,
-    "6mo": 180,
-    "1y": 365,
-    "2y": 730
+# 支持的时间偏移映射
+date_range_offset = {
+    "1d":  {"days": 1},
+    "5d":  {"days": 5},
+    "1mo": {"months": 1},
+    "6mo": {"months": 6},
+    "1y":  {"years": 1},
+    "2y":  {"years": 2},
 }
 
-# MA推荐表
+# MA推荐表（维持你原先的逻辑）
 ma_recommendation_by_range = {
-    "1d": [5],
-    "5d": [5, 10],
+    "1d":  [5],
+    "5d":  [5, 10],
     "1mo": [5, 10, 20],
     "6mo": [20, 50],
-    "1y": [50, 100],
-    "2y": [50, 100, 200]
+    "1y":  [50, 100],
+    "2y":  [50, 100, 200],
 }
 
 @stock_bp.route('/api/stock', methods=['GET'])
 def get_stock_data():
-    symbol = request.args.get("ticker", "AAPL").upper()
-    range_key = request.args.get("range", "6mo")
-    ma_param = request.args.get("ma", "")
-    ma_values = [int(x.strip()) for x in ma_param.split(',') if x.strip().isdigit()]
+    symbol    = request.args.get("ticker", "AAPL").upper()
+    range_key = request.args.get("range",  "6mo")
+    ma_param  = request.args.get("ma",     "")
+    ma_values = [int(x) for x in ma_param.split(',') if x.strip().isdigit()]
 
-    if symbol not in stock_data:
-        return jsonify({"error": f"{symbol} not found"}), 404
-
-    # 转 DataFrame 并处理时间
+    # 1. 原始全量数据
     df = pd.DataFrame(stock_data[symbol])
     df['date'] = pd.to_datetime(df['date'])
     df.set_index('date', inplace=True)
 
-    # 过滤区间数据
-    if range_key in date_range_days:
-        cutoff = datetime.now() - timedelta(days=date_range_days[range_key])
-        df = df[df.index >= cutoff]
-
-    if df.empty:
-        return jsonify({"error": "No data available for this range"}), 400
-
-    # 判断是否有足够数据计算 MA
-    max_ma = max(ma_values) if ma_values else 0
-    if max_ma > 0 and len(df) < max_ma:
-        return jsonify({
-            "error": f"Data range too short for MA{max_ma}.",
-            "max_available_ma": len(df),
-            "suggested_mas": [ma for ma in ma_recommendation_by_range.get(range_key, []) if ma <= len(df)]
-        }), 400
-
-    # 计算 MA
+    # ============================
+    # 🔄 先算 MA，再切片
     for ma in ma_values:
         df[f"ma{ma}"] = df['close'].rolling(window=ma).mean()
+    # ============================
 
-    df.dropna(inplace=True)
+    # —— 下面才开始按 range_key 截取 —— 
+
+    date_range_offset = {
+      "1d":  {"days": 1},
+      "5d":  {"days": 5},
+      "1mo": {"months": 1},
+      "6mo": {"months": 6},
+      "1y":  {"years": 1},
+      "2y":  {"years": 2},
+    }
+    offset = date_range_offset.get(range_key)
+    if offset is not None:
+        cutoff = datetime.now() - relativedelta(**offset)
+        df = df[df.index >= cutoff]
+    # —— 切片结束 —— 
+
+    # 其余不动：你可以不再 dropna()，让前端拿到 NaN 或直接省掉这个步骤
     df.reset_index(inplace=True)
 
     result = []
     for _, row in df.iterrows():
         item = {
-            "date": str(row['date'].date()),
+            "date":  str(row['date'].date()),
             "close": round(row['close'], 2)
         }
         for ma in ma_values:
-            ma_key = f"ma{ma}"
-            if pd.notna(row.get(ma_key)):
-                item[ma_key] = round(row[ma_key], 2)
+            key = f"ma{ma}"
+            # 如果历史够，它现在就会有值
+            if pd.notna(row.get(key)):
+                item[key] = round(row[key], 2)
         result.append(item)
 
     return jsonify(result)
+
