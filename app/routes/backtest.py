@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 import json
 from app.services.signal_ma_cross import ma_cross_strategy
 from app.services.backtest_service import backtest_ma_cross_strategy
@@ -8,28 +9,29 @@ from app.services.backtest_service import backtest_ma_cross_strategy
 backtest_bp = Blueprint('backtest', __name__)
 
 # 加载本地股票数据
-with open("data/sp500.json", "r") as f:
+with open("data/sp500_prices.json", "r") as f:
     stock_data_dict = json.load(f)
 
-date_range_days = {
-    "1d": 1, "5d": 5, "1mo": 30, "6mo": 180, "1y": 365, "2y": 730, "5y": 1825, "max": None
+date_range_offset = {
+    "1d":  {"days": 1},
+    "5d":  {"days": 5},
+    "1mo": {"months": 1},
+    "6mo": {"months": 6},
+    "1y":  {"years": 1},
+    "2y":  {"years": 2},
 }
 
 
 def load_stock_df(symbol, range_key):
-    try:
-        df = pd.DataFrame(stock_data_dict[symbol])
-        df['date'] = pd.to_datetime(df['date'])
+    df = pd.DataFrame(stock_data_dict[symbol])
+    df['date'] = pd.to_datetime(df['date'])
 
-        if date_range_key := date_range_days.get(range_key):
-            cutoff = datetime.now() - timedelta(days=date_range_key)
-            df = df[df['date'] >= cutoff]
+    if offset := date_range_offset.get(range_key):
+        # 用 relativedelta，而不是 timedelta(days=offset_dict)
+        cutoff = datetime.now() - relativedelta(**offset)
+        df = df[df['date'] >= cutoff]
 
-        df = df.sort_values('date').reset_index(drop=True)
-        return df
-    except Exception as e:
-        print(f"❌ 数据加载失败: {e}")
-        return pd.DataFrame()  # 返回空 DataFrame 以便后续处理
+    return df.sort_values('date').reset_index(drop=True)
 
 
 @backtest_bp.route("/api/strategy_backtest_combined", methods=["POST"])

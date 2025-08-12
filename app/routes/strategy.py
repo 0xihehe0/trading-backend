@@ -2,9 +2,10 @@
 Author: yaojinxi 864554492@qq.com
 Date: 2025-04-08 21:24:49
 LastEditors: yaojinxi 864554492@qq.com
-LastEditTime: 2025-04-08 21:48:21
-FilePath: \backend\app\routes\strategy.py
-Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+LastEditTime: 2025-05-18 22:05:42
+FilePath: /backend/app/routes/strategy.py
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置:
+  https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
 from flask import Blueprint, request, jsonify
 import pandas as pd
@@ -13,7 +14,7 @@ import json
 from app.services.signal_ma_cross import ma_cross_strategy
 
 strategy_bp = Blueprint('strategy', __name__)
-with open("data/sp500.json", "r") as f:
+with open("data/sp500_prices.json", "r") as f:
     all_data = json.load(f)
 
 date_range_days = {

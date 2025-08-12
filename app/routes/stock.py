@@ -2,9 +2,10 @@
 Author: yaojinxi 864554492@qq.com
 Date: 2025-04-08 21:24:42
 LastEditors: yaojinxi 864554492@qq.com
-LastEditTime: 2025-05-05 20:55:13
-FilePath: \backend\app\routes\stock.py
-Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+LastEditTime: 2025-05-18 21:58:24
+FilePath: /backend/app/routes/stock.py
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置进行设置:
+  https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
 from flask import Blueprint, request, jsonify
 import pandas as pd
@@ -15,7 +16,7 @@ import json
 stock_bp = Blueprint('stock', __name__)
 
 # 加载数据（只需执行一次）
-with open("data/sp500.json", "r") as f:
+with open("data/sp500_prices.json", "r") as f:
     stock_data = json.load(f)
 
 # 支持的时间偏移映射
@@ -57,22 +58,12 @@ def get_stock_data():
     # ============================
 
     # —— 下面才开始按 range_key 截取 —— 
-
-    date_range_offset = {
-      "1d":  {"days": 1},
-      "5d":  {"days": 5},
-      "1mo": {"months": 1},
-      "6mo": {"months": 6},
-      "1y":  {"years": 1},
-      "2y":  {"years": 2},
-    }
     offset = date_range_offset.get(range_key)
     if offset is not None:
         cutoff = datetime.now() - relativedelta(**offset)
         df = df[df.index >= cutoff]
     # —— 切片结束 —— 
 
-    # 其余不动：你可以不再 dropna()，让前端拿到 NaN 或直接省掉这个步骤
     df.reset_index(inplace=True)
 
     result = []
@@ -83,10 +74,8 @@ def get_stock_data():
         }
         for ma in ma_values:
             key = f"ma{ma}"
-            # 如果历史够，它现在就会有值
             if pd.notna(row.get(key)):
                 item[key] = round(row[key], 2)
         result.append(item)
 
     return jsonify(result)
-
