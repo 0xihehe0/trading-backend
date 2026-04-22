@@ -9,8 +9,11 @@ from app.services.backtest_service import backtest_ma_cross_strategy
 backtest_bp = Blueprint('backtest', __name__)
 
 # 加载本地股票数据
-with open("data/sp500_prices.json", "r") as f:
-    stock_data_dict = json.load(f)
+DATA_DIR = "data/sp500_split"
+
+def _load_symbol(symbol):
+    with open(f"{DATA_DIR}/{symbol}.json") as f:
+        return json.load(f)  # 每次只读几百KB
 
 date_range_offset = {
     "1d":  {"days": 1},

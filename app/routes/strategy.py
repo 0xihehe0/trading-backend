@@ -2,7 +2,7 @@
 Author: yaojinxi 864554492@qq.com
 Date: 2025-04-08 21:24:49
 LastEditors: yaojinxi 864554492@qq.com
-LastEditTime: 2025-05-18 22:05:42
+LastEditTime: 2026-04-22 16:21:45
 FilePath: /backend/app/routes/strategy.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置:
   https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
@@ -14,8 +14,11 @@ import json
 from app.services.signal_ma_cross import ma_cross_strategy
 
 strategy_bp = Blueprint('strategy', __name__)
-with open("data/sp500_prices.json", "r") as f:
-    all_data = json.load(f)
+DATA_DIR = "data/sp500_split"
+
+def _load_symbol(symbol):
+    with open(f"{DATA_DIR}/{symbol}.json") as f:
+        return json.load(f)  # 每次只读几百KB
 
 date_range_days = {
     "1d": 1, "5d": 5, "1mo": 30, "6mo": 180, "1y": 365, "2y": 730
