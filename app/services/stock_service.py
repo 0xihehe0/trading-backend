@@ -11,7 +11,6 @@
 
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from functools import lru_cache
 import pandas as pd
 import json, os
 
@@ -35,12 +34,8 @@ DATE_RANGE_OFFSET = {
 
 
 # ===== 数据加载 =====
-@lru_cache(maxsize=64)
 def _load_symbol(symbol: str) -> list:
-    """
-    按需加载单个公司的 JSON 文件，LRU 缓存最近 64 个。
-    缓存命中时直接返回，不读磁盘。
-    """
+    """按需加载单个公司的 JSON 文件。"""
     filepath = os.path.join(DATA_DIR, f"{symbol}.json")
     if not os.path.exists(filepath):
         return []
