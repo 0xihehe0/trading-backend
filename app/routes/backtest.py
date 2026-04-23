@@ -1,36 +1,39 @@
+'''
+Author: yaojinxi 864554492@qq.com
+Date: 2025-04-19 20:16:40
+LastEditors: yaojinxi 864554492@qq.com
+LastEditTime: 2026-04-23 10:14:04
+FilePath: \backend\app\routes\backtest.py
+Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+'''
 from flask import Blueprint, request, jsonify
 import pandas as pd
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-import json
+import json, os
+from app.config import DATA_DIR, DATE_RANGE_OFFSET
 from app.services.signal_ma_cross import ma_cross_strategy
 from app.services.backtest_service import backtest_ma_cross_strategy
 
 backtest_bp = Blueprint('backtest', __name__)
 
-# 加载本地股票数据
-DATA_DIR = "data/sp500_split"
-
-def _load_symbol(symbol):
-    with open(f"{DATA_DIR}/{symbol}.json") as f:
-        return json.load(f)  # 每次只读几百KB
-
-date_range_offset = {
-    "1d":  {"days": 1},
-    "5d":  {"days": 5},
-    "1mo": {"months": 1},
-    "6mo": {"months": 6},
-    "1y":  {"years": 1},
-    "2y":  {"years": 2},
-}
+def _load_symbol(symbol: str) -> list:
+    filepath = os.path.join(DATA_DIR, f"{symbol}.json")
+    if not os.path.exists(filepath):
+        return []
+    with open(filepath, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def load_stock_df(symbol, range_key):
-    df = pd.DataFrame(stock_data_dict[symbol])
+    rows = _load_symbol(symbol)
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
     df['date'] = pd.to_datetime(df['date'])
 
-    if offset := date_range_offset.get(range_key):
-        # 用 relativedelta，而不是 timedelta(days=offset_dict)
+    if offset := DATE_RANGE_OFFSET.get(range_key):
         cutoff = datetime.now() - relativedelta(**offset)
         df = df[df['date'] >= cutoff]
 
@@ -41,14 +44,6 @@ def load_stock_df(symbol, range_key):
 def strategy_backtest_combined():
     """
     多功能策略接口：支持信号生成 + 回测结果
-    参数:
-    - ticker: 股票代码
-    - range: 时间范围，如 '6mo'
-    - strategy: 策略名，例如 'ma_cross'
-    - params: 策略参数
-    - mode: 'signal' / 'backtest' / 'both'
-    - initial_capital: 初始资金（仅在回测时需要）
-    - commission: 手续费率（仅在回测时需要）
     """
     try:
         payload = request.get_json()
@@ -64,13 +59,11 @@ def strategy_backtest_combined():
         initial_capital = payload.get("initial_capital", 10000)
         commission = payload.get("commission", 0.001)
 
-        if symbol not in stock_data_dict:
-            return jsonify({"error": f"{symbol} not found"}), 404
-
+        # ===== 改动：不再检查 stock_data_dict，直接加载试试 =====
         df = load_stock_df(symbol, date_range_key)
 
         if df.empty:
-            return jsonify({"error": f"No data available for {symbol} in range {date_range_key}"}), 400
+            return jsonify({"error": f"No data available for {symbol} in range {date_range_key}"}), 404
 
         result = {
             "symbol": symbol,

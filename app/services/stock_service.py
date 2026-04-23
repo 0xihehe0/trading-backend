@@ -13,24 +13,12 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import json, os
-
-# ===== 基础配置 =====
-DATA_DIR = "data/sp500_split"  # 拆分后的目录，每个公司一个 JSON 文件
+from app.config import DATA_DIR, DATE_RANGE_OFFSET
 
 # 状态码
 STATUS_LOCAL_ONLY       = "local_only"
 STATUS_SYMBOL_NOT_FOUND = "symbol_not_found"
 STATUS_EMPTY_LOCAL      = "empty_local"
-
-# range → 时间偏移
-DATE_RANGE_OFFSET = {
-    "1d":  {"days": 1},
-    "5d":  {"days": 5},
-    "1mo": {"months": 1},
-    "6mo": {"months": 6},
-    "1y":  {"years": 1},
-    "2y":  {"years": 2},
-}
 
 
 # ===== 数据加载 =====
