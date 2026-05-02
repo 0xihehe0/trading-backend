@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import json, os
-from app.config import DATA_DIR, DATE_RANGE_OFFSET
+from app.config import get_data_path, DATE_RANGE_OFFSET
 
 # 状态码
 STATUS_LOCAL_ONLY       = "local_only"
@@ -24,7 +24,7 @@ STATUS_EMPTY_LOCAL      = "empty_local"
 # ===== 数据加载 =====
 def _load_symbol(symbol: str) -> list:
     """按需加载单个公司的 JSON 文件。"""
-    filepath = os.path.join(DATA_DIR, f"{symbol}.json")
+    filepath = get_data_path(symbol)
     if not os.path.exists(filepath):
         return []
     with open(filepath, "r", encoding="utf-8") as f:

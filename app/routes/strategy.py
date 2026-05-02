@@ -17,7 +17,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json, os
 
-from app.config import DATA_DIR, DATE_RANGE_OFFSET
+from app.config import get_data_path, DATE_RANGE_OFFSET
 from app.strategies import get_strategy, list_strategies
 from app.services.backtest_engine import run_backtest
 
@@ -28,7 +28,7 @@ strategy_bp = Blueprint("strategy", __name__)
 
 def _load_stock_df(symbol: str, range_key: str) -> pd.DataFrame:
     """加载股票数据并按时间范围裁剪。"""
-    filepath = os.path.join(DATA_DIR, f"{symbol}.json")
+    filepath = get_data_path(symbol)
     if not os.path.exists(filepath):
         return pd.DataFrame()
 

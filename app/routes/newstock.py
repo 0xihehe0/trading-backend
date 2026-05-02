@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import requests as http_requests
 import json
 import os
-from app.config import DATA_DIR
+from app.config import get_data_path
 
 newstock_bp = Blueprint("newstock", __name__)
 
@@ -78,7 +78,7 @@ def newstock():
         if not ticker:
             return jsonify({"error": "缺少 ticker 参数"}), 400
 
-        filepath = os.path.join(DATA_DIR, f"{ticker}.json")
+        filepath = get_data_path(ticker)
 
         # 读取现有数据
         if os.path.exists(filepath):
@@ -134,6 +134,7 @@ def newstock():
         merged = existing + new_records
         merged.sort(key=lambda x: x["date"])
 
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(merged, f, ensure_ascii=False)
 

@@ -13,14 +13,14 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json, os
 
-from app.config import DATA_DIR, DATE_RANGE_OFFSET
+from app.config import get_data_path, DATE_RANGE_OFFSET
 
 metrics_bp = Blueprint("metrics", __name__)
 
 
 def _load_df(symbol: str, range_key: str) -> pd.DataFrame:
     """加载数据并按时间范围裁剪。"""
-    filepath = os.path.join(DATA_DIR, f"{symbol}.json")
+    filepath = get_data_path(symbol)
     if not os.path.exists(filepath):
         return pd.DataFrame()
 

@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # ====== 配置 ======
-DATA_DIR = r"D:\trading\backend\data\sp500_split"
+DATA_DIR = r"D:\trading\backend\data\stocks"
 # ==================
 
 YAHOO_HEADERS = {
